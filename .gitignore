@@ -1,0 +1,149 @@
+# Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+.env.*
+*.env
+!.env.example
+secrets/
+*.secret
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.manifest
+*.spec
+
+# IDE & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Logs & Debugging
+logs/
+*.log
+*.log.*
+log/
+*.out
+*.err
+/tmp/
+/tmp/aurora_server.log
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+*.cover
+*.py,cover
+.cache
+nosetests.xml
+coverage.xml
+*.mo
+*.pot
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# Temporary & Cache
+tmp/
+temp/
+*.tmp
+.temp/
+.cache/
+*.cache
+*.bak
+*.backup
+*.old
+
+# Pinecone & Vector DB
+.pinecone/
+cache/
+*.index
+*.idx
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Project Specific
+data/
+*.json.bak
+*.csv
+*.xlsx
+*.xls
+
+# Model Cache (Hugging Face)
+.cache/
+.huggingface/
+models/
+*.bin
+*.safetensors
+*.onnx
+
+# Jupyter Notebooks (if any)
+.ipynb_checkpoints/
+*.ipynb
+
+# Docker
+.dockerignore.bak
+
+# Credentials & API Keys (extra safety)
+*credentials*
+*api_key*
+*token*
+*secret*
+*password*
+config.local.*
+settings.local.*
+

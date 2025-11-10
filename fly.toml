@@ -1,0 +1,47 @@
+# fly.toml file generated for aurora-qa
+
+app = "aurora-qa"
+primary_region = "sjc"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  LOG_LEVEL = "INFO"
+  ENVIRONMENT = "production"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  processes = ["app"]
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 8000
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 1000
+    soft_limit = 200
+
+  [[services.tcp_checks]]
+    grace_period = "1s"
+    interval = "15s"
+    timeout = "2s"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
+
