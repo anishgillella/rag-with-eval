@@ -9,11 +9,11 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 import logfire
 
-from config import get_settings
-from logger_config import setup_logging
-from models import QuestionRequest, AnswerResponse, HealthResponse, IndexingStatusResponse
-from retriever import get_retriever
-from data_ingestion import get_ingestion_pipeline, get_indexing_state, run_background_indexing
+from app.config import get_settings
+from app.logger_config import setup_logging
+from app.models import QuestionRequest, AnswerResponse, HealthResponse, IndexingStatusResponse
+from app.retriever import get_retriever
+from app.data_ingestion import get_ingestion_pipeline, get_indexing_state, run_background_indexing, print_sample_messages
 
 # Setup logging
 settings = get_settings()
@@ -44,6 +44,9 @@ async def lifespan(app: FastAPI):
         retriever = get_retriever()
         app_state["retriever"] = retriever
         logger.info("Retriever initialized successfully")
+
+        # Print sample messages to show what data is available
+        print_sample_messages(count=10)
 
         # Start background indexing if enabled
         if settings.indexing_enabled:
@@ -204,7 +207,7 @@ async def reindex(force: bool = Query(False, description="Force re-indexing even
     logger.info("POST /reindex - Manual re-indexing requested")
     
     try:
-        from data_ingestion import get_ingestion_pipeline, should_index
+        from app.data_ingestion import get_ingestion_pipeline, should_index
         
         if not force:
             if not should_index():

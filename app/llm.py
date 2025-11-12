@@ -3,9 +3,9 @@
 import logging
 from typing import List, Optional, Tuple
 import openai
-from models import RetrievedContext
-from config import get_settings
-from token_utils import TokenUtils, TokenUsage
+from .models import RetrievedContext
+from .config import get_settings
+from .token_utils import TokenUtils, TokenUsage
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +52,19 @@ class LLMService:
         # Build prompt
         system_prompt = """You are a helpful assistant that answers questions about member data 
 from message conversations. Use ONLY the provided context to answer questions accurately and concisely.
+
+IMPORTANT - User-Message Mapping:
+- When a question asks about a specific person (e.g., "What did Sophia say?", "Summarize Fatima's messages"), 
+  focus ONLY on messages from that person based on the user names in brackets [Name] in the context.
+- When a question asks "Who said X?" or "Which user mentioned Y?", identify the user name from the brackets [Name] 
+  in the context that corresponds to the relevant message.
+- When a question asks about multiple users (e.g., "Compare Fatima and Vikram"), provide information about each user separately.
+- User names may have variations or typos in the question - match them semantically to the names in brackets.
+
+IMPORTANT - Answer Format:
+- Do NOT include brackets [ ] around user names in your answer. Use names naturally (e.g., "Sophia Al-Farsi" not "[Sophia Al-Farsi]").
+- The brackets in the context are just for identification - your answer should be natural and readable.
+
 If the answer cannot be found in the context, clearly state that you don't have that information.
 Do not make assumptions or provide information not in the context."""
 

@@ -12,7 +12,7 @@ if "HUGGING_FACE_HUB_TOKEN" in os.environ:
     del os.environ["HUGGING_FACE_HUB_TOKEN"]
 
 from sentence_transformers import CrossEncoder
-from models import RetrievedContext
+from .models import RetrievedContext
 
 logger = logging.getLogger(__name__)
 
@@ -64,9 +64,11 @@ class CrossEncoderReranker:
         logger.info(f"Reranking {len(contexts)} contexts for question: {question[:50]}...")
 
         try:
-            # Prepare question-context pairs
+            # Prepare question-context pairs - include user name to enable user-message semantic mapping
+            # Format: "[User Name] message" matches the embedding format for consistency
+            # This allows the reranker to understand queries about users and map messages to users
             pairs = [
-                (question, ctx.message.message) for ctx in contexts
+                (question, f"[{ctx.message.user_name}] {ctx.message.message}") for ctx in contexts
             ]
 
             # Get scores from cross-encoder

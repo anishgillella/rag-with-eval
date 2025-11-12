@@ -11,22 +11,22 @@ if "HUGGING_FACE_HUB_TOKEN" in os.environ:
     del os.environ["HUGGING_FACE_HUB_TOKEN"]
 
 from sentence_transformers import SentenceTransformer
-from config import get_settings
+from .config import get_settings
 
 logger = logging.getLogger(__name__)
 
 
-class JinaEmbeddingsClient:
+class BGEEmbeddingsClient:
     """Client for BAAI/bge-large-en-v1.5 using sentence-transformers library."""
 
     def __init__(self):
-        """Initialize the Jina embeddings client."""
+        """Initialize the BGE embeddings client."""
         settings = get_settings()
         self.api_key = settings.huggingface_api_key
         self.model_name = settings.hf_embedding_model
         self.embedding_dim = 1024
 
-        logger.info(f"Initializing JinaEmbeddingsClient: model={self.model_name}, dim={self.embedding_dim}")
+        logger.info(f"Initializing BGEEmbeddingsClient: model={self.model_name}, dim={self.embedding_dim}")
         
         # Load the model locally (public model, no auth needed)
         # Explicitly disable auth token to avoid using cached invalid token
@@ -51,7 +51,7 @@ class JinaEmbeddingsClient:
             logger.warning("Empty text list provided to embed_texts")
             return []
 
-        logger.debug(f"Embedding {len(texts)} texts with Jina")
+        logger.debug(f"Embedding {len(texts)} texts with BGE")
 
         try:
             # Use sentence-transformers to encode (convert to numpy for proper conversion to list)
@@ -154,10 +154,10 @@ class JinaEmbeddingsClient:
 _embeddings_client = None
 
 
-def get_embeddings_client() -> JinaEmbeddingsClient:
+def get_embeddings_client() -> BGEEmbeddingsClient:
     """Get or create the embeddings client."""
     global _embeddings_client
     if _embeddings_client is None:
-        logger.info("Creating new JinaEmbeddingsClient instance")
-        _embeddings_client = JinaEmbeddingsClient()
+        logger.info("Creating new BGEEmbeddingsClient instance")
+        _embeddings_client = BGEEmbeddingsClient()
     return _embeddings_client

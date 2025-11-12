@@ -6,10 +6,10 @@ import time
 from datetime import datetime, timedelta
 from typing import List
 import requests
-from models import Message, PaginatedMessages, IndexingMetadata
-from embeddings import get_embeddings_client
-from vector_store import get_vector_store
-from config import get_settings
+from .models import Message, PaginatedMessages, IndexingMetadata
+from .embeddings import get_embeddings_client
+from .vector_store import get_vector_store
+from .config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -338,8 +338,10 @@ class DataIngestionPipeline:
 
                 logger.info(f"Processing batch {batch_num}/{total_batches}")
 
-                # Extract texts for embedding
-                texts = [msg.message for msg in batch]
+                # Extract texts for embedding - include user name to enable user-message semantic mapping
+                # Format: "[User Name] message content" - this allows queries about users to find their messages
+                # and queries with message content to map back to users semantically
+                texts = [f"[{msg.user_name}] {msg.message}" for msg in batch]
 
                 # Generate embeddings
                 logger.debug(f"Generating embeddings for {len(texts)} messages")
@@ -471,7 +473,7 @@ def should_index() -> bool:
         True if indexing is needed, False if data already exists
     """
     try:
-        from vector_store import get_vector_store
+        from .vector_store import get_vector_store
         vector_store = get_vector_store()
         stats = vector_store.get_index_stats()
         
@@ -516,4 +518,107 @@ async def run_background_indexing():
     except Exception as e:
         logger.error(f"Error in background indexing: {e}")
         indexing_state["last_error"] = str(e)
+
+
+def fetch_sample_messages(count: int = 10) -> List[Message]:
+    """
+    Fetch a random sample of messages from the API to show what data is available.
+    
+    Args:
+        count: Number of sample messages to fetch
+        
+    Returns:
+        List of sample messages
+    """
+    import random
+    settings = get_settings()
+    api_url = settings.external_api_url
+    
+    try:
+        # First, get total count
+        response = requests.get(
+            f"{api_url}/messages/",
+            params={"skip": 0, "limit": 1},
+            timeout=30,  # Increased timeout for slow API
+            headers={"Accept": "application/json"},
+        )
+        response.raise_for_status()
+        paginated = PaginatedMessages(**response.json())
+        total = paginated.total
+        
+        if total == 0:
+            logger.warning("No messages found in API")
+            return []
+        
+        # Fetch random samples from different pages
+        sample_messages = []
+        
+        # Generate random page numbers (each page has up to 100 messages)
+        num_pages = (total + 99) // 100  # Round up
+        if num_pages == 0:
+            return []
+        
+        # Get up to 'count' random pages, but don't exceed available pages
+        pages_to_sample = min(count, num_pages)
+        random_page_numbers = random.sample(range(num_pages), pages_to_sample)
+        
+        for page_num in random_page_numbers:
+            skip = page_num * 100
+            try:
+                response = requests.get(
+                    f"{api_url}/messages/",
+                    params={"skip": skip, "limit": 1},
+                    timeout=30,  # Increased timeout for slow API
+                    headers={"Accept": "application/json"},
+                )
+                response.raise_for_status()
+                paginated = PaginatedMessages(**response.json())
+                if paginated.items:
+                    sample_messages.append(paginated.items[0])
+            except Exception as e:
+                logger.debug(f"Failed to fetch sample at skip={skip}: {e}")
+                continue
+        
+        return sample_messages
+        
+    except Exception as e:
+        logger.warning(f"Failed to fetch sample messages: {e}")
+        return []
+
+
+def print_sample_messages(count: int = 10):
+    """
+    Fetch and print sample messages to show what data is available.
+    Non-blocking - fails gracefully if API is slow/unavailable.
+    
+    Args:
+        count: Number of sample messages to display
+    """
+    logger.info("=" * 80)
+    logger.info("FETCHING SAMPLE MESSAGES FROM API")
+    logger.info("=" * 80)
+    
+    try:
+        samples = fetch_sample_messages(count)
+        
+        if not samples:
+            logger.warning("No sample messages could be fetched (API may be slow or unavailable)")
+            logger.info("Continuing startup without sample messages...")
+            return
+        
+        logger.info(f"\n📋 Sample Messages ({len(samples)} shown):")
+        logger.info("=" * 80)
+        
+        for i, msg in enumerate(samples, 1):
+            logger.info(f"\n[{i}] User: {msg.user_name} (ID: {msg.user_id})")
+            logger.info(f"    Timestamp: {msg.timestamp}")
+            logger.info(f"    Message: {msg.message[:200]}{'...' if len(msg.message) > 200 else ''}")
+        
+        logger.info("\n" + "=" * 80)
+        logger.info(f"Total messages in API: {indexing_state.get('expected_total_messages', 'Unknown')}")
+        logger.info("=" * 80 + "\n")
+        
+    except Exception as e:
+        logger.warning(f"Sample message fetching failed: {e}")
+        logger.info("Continuing startup without sample messages...")
 

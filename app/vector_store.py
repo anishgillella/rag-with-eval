@@ -4,8 +4,8 @@ import logging
 import time
 from typing import List, Tuple, Optional
 from pinecone import Pinecone
-from models import Message, RetrievedContext
-from config import get_settings
+from .models import Message, RetrievedContext
+from .config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -137,6 +137,7 @@ class PineconeStore:
         self,
         query_embedding: List[float],
         top_k: int = 5,
+        filter_user_name: Optional[str] = None,
     ) -> List[RetrievedContext]:
         """
         Search for most similar messages.
@@ -144,18 +145,27 @@ class PineconeStore:
         Args:
             query_embedding: Query embedding vector
             top_k: Number of top results to return
+            filter_user_name: Optional user name to filter by (exact match)
 
         Returns:
             List of retrieved contexts with scores
         """
-        logger.debug(f"Searching Pinecone with top_k={top_k}")
+        logger.debug(f"Searching Pinecone with top_k={top_k}, filter_user_name={filter_user_name}")
 
         try:
-            results = self.index.query(
-                vector=query_embedding,
-                top_k=top_k,
-                include_metadata=True,
-            )
+            # Build query parameters
+            query_params = {
+                "vector": query_embedding,
+                "top_k": top_k,
+                "include_metadata": True,
+            }
+            
+            # Add metadata filter if user_name is specified
+            if filter_user_name:
+                query_params["filter"] = {"user_name": {"$eq": filter_user_name}}
+                logger.debug(f"Filtering by user_name: {filter_user_name}")
+            
+            results = self.index.query(**query_params)
 
             retrieved = []
             for i, match in enumerate(results.get("matches", [])):

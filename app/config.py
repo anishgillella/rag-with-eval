@@ -31,8 +31,8 @@ class Settings(BaseSettings):
     environment: str = "development"
 
     # Retrieval Settings
-    top_k_initial_retrieval: int = 20
-    top_k_after_reranking: int = 5
+    top_k_initial_retrieval: int = 100  # Increased to handle typos/format issues - more candidates
+    top_k_after_reranking: int = 10  # Increased to give LLM more context for better matching
     embedding_batch_size: int = 100
     message_batch_size: int = 256
 

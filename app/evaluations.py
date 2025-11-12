@@ -4,12 +4,12 @@ import logging
 from datetime import datetime
 from typing import List
 import logfire
-from models import (
+from .models import (
     EvaluationScore,
     EvaluationResults,
     RetrievedContext,
 )
-from llm import get_llm_service
+from .llm import get_llm_service
 
 logger = logging.getLogger(__name__)
 
