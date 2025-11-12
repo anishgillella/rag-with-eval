@@ -16,6 +16,7 @@ class QuestionRequest(BaseModel):
     question: str = Field(..., min_length=5, max_length=500)
     include_sources: bool = False
     include_evaluations: bool = True
+    max_sources: Optional[int] = Field(None, ge=1, le=500, description="Maximum number of sources to use. For user-specific queries, set to None to use all messages from that user.")
 
 
 class EvaluationScore(BaseModel):
