@@ -64,6 +64,9 @@ IMPORTANT - User-Message Mapping:
 IMPORTANT - Answer Format:
 - Do NOT include brackets [ ] around user names in your answer. Use names naturally (e.g., "Sophia Al-Farsi" not "[Sophia Al-Farsi]").
 - The brackets in the context are just for identification - your answer should be natural and readable.
+- Write in flowing prose paragraphs, NOT as numbered lists or bullet points.
+- If the question asks about patterns/trends/themes, discuss them in paragraph form with connective language.
+- Only use lists if specifically asked for "list of" or "enumerate".
 
 If the answer cannot be found in the context, clearly state that you don't have that information.
 Do not make assumptions or provide information not in the context."""
