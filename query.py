@@ -101,7 +101,7 @@ def format_response(response: dict, verbose: bool = False) -> str:
     
     # Tips
     if "tips" in response and response["tips"]:
-        output.append(f"\n💡 {response['tips']}")
+        output.append(f"\nTip: {response['tips']}")
     
     output.append("")
     
