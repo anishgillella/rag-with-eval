@@ -1,315 +1,337 @@
-# Aurora QA System
+# Aurora - AI Question Answering System
 
-A production-ready question-answering system using Retrieval-Augmented Generation (RAG) with FastAPI, Pinecone, and GPT-4o mini.
+A production-ready question-answering system using Retrieval-Augmented Generation (RAG) with a modern full-stack architecture. Built with FastAPI backend and Next.js frontend.
 
-## Overview
+**Live Demo:** [https://aurora-qa.vercel.app](https://aurora-qa.vercel.app)
 
-Aurora answers natural-language questions about member data by:
-1. Detecting query type (user-specific, multi-user, factual, comparison, general)
-2. Embedding questions using BGE embeddings (1024-dim)
-3. Semantic search in Pinecone (top 100 results)
-4. Cross-encoder reranking (top 30 results)
-5. Generating answers with GPT-4o mini
-6. Computing confidence scores
+## Quick Start
 
-## Design Approach
+### Prerequisites
+- Python 3.11+ (for backend)
+- Node.js 18+ (for frontend)
+- API Keys: Pinecone, OpenRouter, Hugging Face
 
-### Why RAG with Two-Stage Retrieval?
+### Option 1: Local Development
 
-**Alternative Approaches Considered:**
+**Backend:**
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python main.py  # Server on http://localhost:8000
+```
 
-1. **Keyword Search** ❌
-   - Fast but brittle, fails on paraphrased questions
-   - Low accuracy
+**Frontend (new terminal):**
+```bash
+cd frontend
+npm install
+npm run dev  # Visit http://localhost:3000
+```
 
-2. **Full LLM Context** ❌
-   - Would send all 3,349 messages to LLM
-   - Expensive (~$1 per query), hits token limits
+### Option 2: Deploy to Cloud
 
-3. **Simple Semantic Search** ❌
-   - Better but imperfect ranking
-   - May miss relevant context
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for step-by-step Railway + Vercel deployment.
 
-4. **RAG with Two-Stage Retrieval** ✅ (Selected)
-   - Semantic search gets diverse candidates (top 100)
-   - Cross-encoder reranks by relevance (top 30)
-   - Best of both worlds: semantic understanding + precise ranking
-   - Grounded answers with observable context
+## Project Structure
 
-### Architecture
+```
+Aurora/
+├── backend/              # FastAPI backend (Python)
+│   ├── app/             # Core modules
+│   ├── main.py          # Entry point
+│   ├── requirements.txt  # Dependencies
+│   ├── Dockerfile       # Docker config
+│   └── BACKEND_README.md # Detailed backend docs
+│
+├── frontend/            # Next.js frontend (React)
+│   ├── src/app/         # Pages & components
+│   ├── package.json     # Dependencies
+│   └── .env.example     # Config template
+│
+├── DEPLOYMENT.md        # Deployment guide
+└── README.md           # This file
+```
+
+## Architecture
+
+### Backend (FastAPI + RAG)
 
 ```
 Question
   ↓
 [Type Detection] → Identify query type
   ↓
-[Embedding] → Convert to 1024-dim vector (BGE)
+[Embedding] → BGE embeddings (1024-dim)
   ↓
-[Semantic Search] → Query Pinecone, get top-100
+[Semantic Search] → Pinecone (top-100)
   ↓
-[Reranking] → Cross-encoder ranks → top-30
+[Reranking] → Cross-encoder (top-30)
   ↓
-[LLM Generation] → GPT-4o mini generates answer
+[LLM] → GPT-4o mini generates answer
   ↓
-[Confidence Score] → Multi-factor confidence (0-1)
-  ↓
-[Response] → Answer + confidence + tips + sources
+[Response] → Answer + confidence + sources
 ```
 
-### Components
+**Key Features:**
+- Two-stage retrieval (semantic + reranking)
+- Confidence scoring (0-1)
+- Query type detection
+- Source attribution
+- Comprehensive logging
 
-| Component | Technology | Purpose |
-|-----------|-----------|---------|
-| **Embeddings** | BGE-large-en-v1.5 (1024-dim) | Text-to-vector |
-| **Vector DB** | Pinecone | Semantic search |
-| **Reranker** | cross-encoder/mmarco-mMiniLMv2-L12-H384-v1 | Two-stage ranking |
-| **LLM** | GPT-4o mini (OpenRouter) | Answer generation |
-| **Framework** | FastAPI | API & async |
-| **Observability** | Logfire + Python logging | Monitoring |
+See [backend/BACKEND_README.md](./backend/BACKEND_README.md) for full details.
 
-## Setup
+### Frontend (Next.js)
 
-### Prerequisites
-- Python 3.11+
-- API Keys: Pinecone, OpenRouter, Hugging Face, Logfire (optional)
+**Features:**
+- Beautiful, modern UI
+- Real-time query interface
+- Source visualization
+- Query type detection display
+- Confidence indicators
+- Responsive design
 
-### Installation
+**Tech Stack:**
+- Next.js 14
+- TypeScript
+- Tailwind CSS
+- Lucide icons
+- Axios
 
-```bash
-cd Aurora
-python -m venv venv
-source venv/bin/activate  # or `venv\Scripts\activate` on Windows
-pip install -r requirements.txt
-```
+## API Usage
 
-### Configuration
-
-```bash
-cp .env.example .env
-# Edit .env with your API keys
-```
-
-Create Pinecone index:
-- Name: `aurora`
-- Dimensions: `1024`
-- Metric: `cosine`
-
-### Run
+### Ask a Question
 
 ```bash
-python main.py
-```
-
-Server starts at `http://localhost:8000`
-
-## Usage
-
-### Query via Python CLI
-
-```bash
-# Simple query
-python query.py "What did Sophia say about travel?"
-
-# Show sources
-python query.py "Summarize Sophia's messages" --sources
-
-# Show evaluations
-python query.py "How many cars does Vikram have?" --evaluations
-
-# Verbose (shows scores)
-python query.py "Compare Fatima and Vikram" --verbose
-
-# JSON output
-python query.py "What are Lorenzo's first 5 messages?" --json
-
-# Custom source limit
-python query.py "What did Vikram mention?" --max-sources 50
-```
-
-### Query via REST API
-
-```bash
-# Basic query
-curl -X POST "http://localhost:8000/ask" \
-  -H "Content-Type: application/json" \
-  -d '{"question": "What did Sophia say about travel?"}'
-
-# With sources and custom limit
 curl -X POST "http://localhost:8000/ask" \
   -H "Content-Type: application/json" \
   -d '{
-    "question": "Summarize Sophia'"'"'s messages",
-    "include_sources": true,
-    "max_sources": 30
-  }' | python -m json.tool
+    "question": "When is Layla planning her trip to London?",
+    "include_sources": true
+  }'
 ```
 
 ### Response Format
 
 ```json
 {
-  "answer": "Sophia prefers sustainable travel options...",
+  "answer": "Based on the messages, Layla is planning her trip to London for next month...",
   "confidence": 0.85,
   "query_metadata": {
     "query_type": "user_specific",
-    "mentioned_users": ["Sophia Al-Farsi"],
-    "confidence_factors": {...}
+    "mentioned_users": ["Layla Kawaguchi"]
   },
-  "tips": "Good confidence: 30 relevant sources found.",
-  "sources": [...],
-  "latency_ms": 2345.6,
-  "model_used": "openai/gpt-4o-mini",
-  "token_usage": {...}
+  "tips": "Good confidence: 15 relevant sources found.",
+  "sources": [
+    {
+      "user_name": "Layla Kawaguchi",
+      "message": "Book me flights to London for next month",
+      "similarity_score": 0.92,
+      "reranker_score": 0.88
+    }
+  ]
 }
 ```
 
-## Data Analysis & Anomalies
-
-### Analyze Dataset
-
-Run anomaly detection to identify data issues:
+## Example Queries
 
 ```bash
-python anomaly_detection.py
+# User-specific
+"What did Sophia say about travel?"
+"Summarize Amira's messages"
+
+# Factual
+"How many cars does Vikram have?"
+"What restaurants are mentioned?"
+
+# Comparative
+"Compare Fatima and Vikram's travel styles"
+"What do Sophia and Amira have in common?"
 ```
 
-Generates: `anomalies_report.json`
+## Data Analysis
 
-**Detection includes:**
-1. Inconsistent Message IDs
-2. Temporal Anomalies
-3. Duplicate Content
-4. User ID Inconsistencies
-5. Malformed Data
-6. Content Anomalies
-7. Timestamp Order Violations
-8. User Name Formatting Issues
+### Dataset Quality: 92%
 
-### Extract Messages
+**Total Messages:** 3,400 (3,300 unique)
 
-Export all messages grouped by user:
+**Anomalies Found:**
+1. Duplicate Message IDs (100, 3%) - API pagination overlap
+2. Temporal Anomalies (100, 5%) - Batch processing timestamps
 
+**Analysis Tool:**
 ```bash
-# Markdown format (default)
-python extract_messages.py
-
-# JSON format
-python extract_messages.py --format json
-
-# Custom filename
-python extract_messages.py --output my_messages.json
+cd backend
+python anomaly_detection.py  # Generates anomalies_report.json
 ```
 
-Generates: `messages_by_user.md` or `messages_by_user.json`
+See [backend/BACKEND_README.md](./backend/BACKEND_README.md#dataset-quality) for full analysis.
 
-## Dataset Quality
+## Deployment
 
-### Analysis Results
-
-**Dataset:** 3,400 messages from 10 active users
-
-#### ⚠️ Anomalies Found
-
-**1. Duplicate Message IDs (100 duplicates - 3%)**
-- Same message ID appears twice with identical content/user/timestamp
-- Root cause: API pagination overlap
-- Impact: 3,400 → 3,300 unique messages
-- Example: ID `1e2db9e8-2523-439d-94ab-b768279e59e6` appears twice for Sophia Al-Farsi
-
-**2. Temporal Anomalies (100 messages - 5%)**
-- Multiple messages per user sharing exact same timestamp
-- Root cause: Batch processing
-- All 10 users affected with 14-26 messages per user
-- Impact: Low - RAG is semantic-based, not timestamp-dependent
-
-#### Data Quality Summary
-
-| Metric | Result | Status |
-|--------|--------|--------|
-| **Total Messages** | 3,400 (3,300 unique) | - |
-| **Duplicate Message IDs** | 100 (3%) | ⚠️ Medium |
-| **Temporal Anomalies** | 100 (5%) | ⚠️ Low |
-| **User ID Consistency** | ✓ All consistent | ✓ Good |
-| **Data Integrity** | ✓ All fields valid | ✓ Good |
-| **Data Quality Score** | **92%** | ✓ Excellent |
-
-**Conclusion:** Data is excellent for RAG - only 2 minor expected anomalies.
-
-## Key Improvements
-
-### vs. Keyword Search
-- Handles paraphrased questions
-- Understands semantic meaning
-- 5-10x better accuracy
-
-### vs. All Messages to LLM
-- 100x cheaper (~$0.0003 vs ~$0.03 per query)
-- Faster (2-3s vs 10-20s)
-- Fits token limits
-
-### vs. Simple Semantic Search
-- Better ranking (cross-encoder)
-- Confidence scores
-- Query type awareness
-- User-specific optimization
-
-## Testing
-
+### Railway (Backend)
 ```bash
-python test_queries.py
+1. Connect GitHub repo to Railway
+2. Set Python environment variables
+3. Deploy (auto-detects Dockerfile)
+4. Get API URL
 ```
+
+### Vercel (Frontend)
+```bash
+1. Connect GitHub repo to Vercel
+2. Set root directory to `frontend`
+3. Set NEXT_PUBLIC_API_URL env var
+4. Deploy
+```
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions.
 
 ## Performance
 
-- **Startup:** ~3-4 seconds (model loading)
-- **Indexing:** ~2-3 minutes for 3,349 messages
+- **Backend startup:** ~3-4 seconds
 - **Query latency:** ~2-3 seconds
   - Embedding: ~200ms
   - Retrieval: ~100ms
   - Reranking: ~500ms
   - LLM: ~1000ms
-  - Confidence calc: ~50ms
+- **Indexing:** ~2-3 minutes for 3,349 messages
 
-## Deployment
+## Design Decisions
 
-### Docker
+### Why RAG with Two-Stage Retrieval?
 
+**Alternatives Considered:**
+1. **Keyword Search** ❌
+   - Fast but brittle
+   - Fails on paraphrased questions
+
+2. **Full LLM Context** ❌
+   - Would send all 3,349 messages
+   - Expensive (~$1 per query)
+
+3. **Simple Semantic Search** ❌
+   - Better but imperfect ranking
+   - May miss relevant context
+
+4. **RAG with Two-Stage Retrieval** ✅
+   - Semantic search + cross-encoder
+   - Grounded answers
+   - Observable context
+   - Scalable to 300K+ messages
+
+### Tech Stack Rationale
+
+- **FastAPI:** Production-ready, async, auto-docs, excellent performance
+- **Pinecone:** Managed vector DB, low maintenance, scales automatically
+- **GPT-4o mini:** Balanced cost/quality for generation
+- **Next.js:** Modern frontend, deployed instantly on Vercel
+- **Tailwind CSS:** Beautiful UI without custom CSS
+
+## Troubleshooting
+
+### Backend Issues
+
+**"ModuleNotFoundError"**
 ```bash
-docker build -t aurora-qa .
-docker run -p 8000:8000 \
-  -e PINECONE_API_KEY=... \
-  -e OPENROUTER_API_KEY=... \
-  -e HUGGINGFACE_API_KEY=... \
-  aurora-qa
+cd backend
+pip install -r requirements.txt
 ```
 
-### Railway / Render
+**"No API Key"**
+- Check .env file has all required keys
+- Use .env.example as template
 
-1. Create account and connect GitHub repo
-2. Set environment variables in dashboard
-3. Deploy (automatic on push)
+### Frontend Issues
+
+**"Can't connect to backend"**
+- Check backend is running: `curl http://localhost:8000/health`
+- Set NEXT_PUBLIC_API_URL correctly
+- Check CORS in backend (enabled by default)
+
+### Deployment Issues
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md#troubleshooting) for common issues.
+
+## Development
+
+### Adding Features
+
+**New Query Type?**
+- Edit `app/query_analyzer.py`
+- Add detection logic
+- Update confidence calculation
+
+**New Reranker?**
+- Edit `app/reranker.py`
+- Update model configuration
+
+**New Frontend Page?**
+- Add file to `frontend/src/app/`
+- Use existing components
+
+### Testing
+
+```bash
+cd backend
+python test_queries.py  # Run test suite
+python extract_messages.py  # Export data
+python anomaly_detection.py  # Analyze data
+```
 
 ## Monitoring
 
-### Logfire Dashboard
-- Real-time pipeline metrics
-- LLM call tracking and costs
-- Evaluation scores
-- Error rates and latency
+**Backend Logs:**
+```bash
+# Local
+tail -f logs/app_*.log
 
-### Local Logging
-- `logs/app_*.log` - All application logs
-- `logs/errors_*.log` - Errors only
+# Railway
+Visit project → Logs tab
+```
 
-## Support
+**Frontend Logs:**
+- Vercel dashboard → Deployments → View Functions
 
-For issues:
-1. Check `logs/` directory for errors
-2. Review this README
-3. Run `test_queries.py` to verify setup
-4. Run `anomaly_detection.py` to check data
-5. Create GitHub issue with error details
+## API Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/ask` | POST | Ask a question |
+| `/health` | GET | Health check |
+| `/status` | GET | Indexing status |
+| `/reindex` | POST | Manual reindex |
+| `/docs` | GET | API documentation |
+
+## Future Improvements
+
+- [ ] Multi-turn conversations
+- [ ] Result caching with TTL
+- [ ] Incremental indexing
+- [ ] Query expansion
+- [ ] Analytics dashboard
+- [ ] A/B testing framework
 
 ## License
 
 MIT
+
+## Support
+
+**Issues?**
+
+1. Check logs: `logs/app_*.log`
+2. Read backend docs: `backend/BACKEND_README.md`
+3. Check deployment: `DEPLOYMENT.md`
+4. Review API: `http://localhost:8000/docs`
+
+**Want to contribute?**
+- Fork the repo
+- Create a feature branch
+- Submit a PR
+
+## Questions?
+
+Ask the AI directly! Visit the live demo or run locally and test.
+
