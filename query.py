@@ -84,11 +84,11 @@ def format_response(response: dict, verbose: bool = False) -> str:
     
     # Visual confidence indicator
     if confidence >= 0.8:
-        confidence_indicator = "🟢 HIGH"
+        confidence_indicator = "HIGH"
     elif confidence >= 0.6:
-        confidence_indicator = "🟡 MODERATE"
+        confidence_indicator = "MODERATE"
     else:
-        confidence_indicator = "🔴 LOW"
+        confidence_indicator = "LOW"
     
     output.append(f"Confidence: {confidence_indicator} ({confidence_percent:.0f}%)")
     
@@ -140,7 +140,7 @@ def format_response(response: dict, verbose: bool = False) -> str:
         output.append("=" * 80)
         if "evaluations" in evals:
             for eval_item in evals["evaluations"]:
-                status = "✓" if eval_item.get("passed", False) else "✗"
+                status = "PASS" if eval_item.get("passed", False) else "FAIL"
                 output.append(f"{status} {eval_item.get('name', 'unknown')}: "
                             f"{eval_item.get('score', 0):.2f}")
                 if verbose:

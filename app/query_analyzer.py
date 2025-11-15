@@ -97,24 +97,24 @@ class QueryAnalyzer:
         # Confidence-based tips
         if num_sources < 2:
             tips.append(
-                "⚠️ Low confidence: Only 1 source found. Try a broader question or check if data exists."
+                "Low confidence: Only 1 source found. Try a broader question or check if data exists."
             )
         elif num_sources < 5:
             tips.append(
-                "✓ Moderate confidence: Limited sources. Consider asking about different aspects."
+                "Moderate confidence: Limited sources. Consider asking about different aspects."
             )
         else:
-            tips.append(f"✓ Good confidence: {num_sources} relevant sources found.")
+            tips.append(f"Good confidence: {num_sources} relevant sources found.")
 
         # Query type-specific tips
         if query_type == "user_specific" and not mentioned_users:
-            tips.append("💡 Tip: Mention a specific user name for more accurate results.")
+            tips.append("Tip: Mention a specific user name for more accurate results.")
         elif query_type == "factual" and num_sources < 3:
-            tips.append("💡 Tip: Try rephrasing as 'What did [user] say about...' for better results.")
+            tips.append("Tip: Try rephrasing as 'What did [user] say about...' for better results.")
         elif query_type == "comparison" and len(mentioned_users) < 2:
-            tips.append("💡 Tip: Mention specific users to compare their information.")
+            tips.append("Tip: Mention specific users to compare their information.")
         elif query_type == "general" and num_sources < 3:
-            tips.append("💡 Tip: Be more specific about what information you're looking for.")
+            tips.append("Tip: Be more specific about what information you're looking for.")
 
         return " ".join(tips)
 
@@ -202,36 +202,36 @@ class QueryAnalyzer:
 
         error_messages = {
             "no_user_found": (
-                f"❌ Could not find information about '{context.get('query', 'that user')}'.\n"
+                f"Could not find information about '{context.get('query', 'that user')}'.\n"
                 "Try:\n"
-                "  • Spelling the name differently\n"
-                "  • Asking about a different person\n"
-                "  • Using a more general question"
+                "  * Spelling the name differently\n"
+                "  * Asking about a different person\n"
+                "  * Using a more general question"
             ),
             "no_relevant_sources": (
-                f"❌ No relevant information found for '{context.get('query', 'your query')}'.\n"
+                f"No relevant information found for '{context.get('query', 'your query')}'.\n"
                 "Try:\n"
-                "  • Being more specific\n"
-                "  • Mentioning a user name\n"
-                "  • Rephrasing your question"
+                "  * Being more specific\n"
+                "  * Mentioning a user name\n"
+                "  * Rephrasing your question"
             ),
             "sparse_sources": (
-                f"⚠️ Limited information found (only {context.get('num_sources', 1)} source).\n"
+                f"Limited information found (only {context.get('num_sources', 1)} source).\n"
                 "This answer has low confidence. Try:\n"
-                "  • Asking about a different aspect\n"
-                "  • Mentioning specific users\n"
-                "  • Using different keywords"
+                "  * Asking about a different aspect\n"
+                "  * Mentioning specific users\n"
+                "  * Using different keywords"
             ),
             "api_error": (
-                "⚠️ System error while processing your question.\n"
+                "System error while processing your question.\n"
                 "Our system is experiencing issues. Please try again in a moment."
             ),
             "invalid_question": (
-                "❌ Your question is too vague or too long.\n"
+                "Your question is too vague or too long.\n"
                 "Try:\n"
-                "  • Shortening your question\n"
-                "  • Being more specific\n"
-                "  • Example: 'What did Sophia say about travel?'"
+                "  * Shortening your question\n"
+                "  * Being more specific\n"
+                "  * Example: 'What did Sophia say about travel?'"
             ),
         }
 

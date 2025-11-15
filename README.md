@@ -15,57 +15,57 @@ Aurora provides a scalable QA system that:
 
 ## Key Features
 
-### ✨ New Improvements (Latest Release)
+### New Improvements (Latest Release)
 
-1. **Query Type Detection** 🎯
+1. **Query Type Detection**
    - Automatically identifies query intent (user-specific, multi-user, factual, comparison, general)
    - Optimizes retrieval strategy based on query type
    - Helps users understand what query pattern was detected
 
-2. **Confidence Scoring** 📊
+2. **Confidence Scoring**
    - Multi-factor confidence calculation (0.0-1.0)
    - Considers: source count (30%), reranker quality (30%), query specificity (20%), consistency (20%)
-   - Visual indicators: 🟢 HIGH (≥0.8) | 🟡 MODERATE (0.6-0.8) | 🔴 LOW (<0.6)
+   - Confidence levels: HIGH (>=0.8) | MODERATE (0.6-0.8) | LOW (<0.6)
    - Fixed: Reranker scores normalized using sigmoid function
 
-3. **Better Error Messages** 💡
+3. **Better Error Messages**
    - Context-aware tips based on query type
    - Suggestions for improving queries
    - Clear feedback when confidence is low
    - Helps users understand how to get better results
 
 ### Core Features
-- ✅ Semantic search with vector embeddings (BGE v1.5)
-- ✅ Two-stage retrieval: semantic search (top 100) + cross-encoder reranking (top 30)
-- ✅ LLM-based answer generation (GPT-4o mini)
-- ✅ Comprehensive evaluation suite (5 metrics)
-- ✅ Background data indexing (non-blocking startup)
-- ✅ User-specific query optimization
-- ✅ Lazy-loaded user name caching for performance
-- ✅ Full observability with Logfire
-- ✅ Detailed logging for debugging
+- Semantic search with vector embeddings (BGE v1.5)
+- Two-stage retrieval: semantic search (top 100) + cross-encoder reranking (top 30)
+- LLM-based answer generation (GPT-4o mini)
+- Comprehensive evaluation suite (5 metrics)
+- Background data indexing (non-blocking startup)
+- User-specific query optimization
+- Lazy-loaded user name caching for performance
+- Full observability with Logfire
+- Detailed logging for debugging
 
 ## Architecture
 
 ### Data Flow
 ```
 Question
-  ↓
-[Type Detection] → Identify query type (user-specific, multi-user, etc.)
-  ↓
-[Embedding] → Convert question to 1024-dim vector (BGE)
-  ↓
-[Semantic Search] → Query Pinecone, get top-100 messages
-  ↓
-[User-Specific Filter] → If user detected, filter to only their messages
-  ↓
-[Reranking] → Cross-encoder ranks all → top-30 most relevant
-  ↓
-[LLM Generation] → GPT-4o mini generates answer from context
-  ↓
-[Confidence Calculation] → Multi-factor confidence score
-  ↓
-[Response] → Answer + confidence + tips + sources (optional)
+  |
+[Type Detection] > Identify query type (user-specific, multi-user, etc.)
+  |
+[Embedding] > Convert question to 1024-dim vector (BGE)
+  |
+[Semantic Search] > Query Pinecone, get top-100 messages
+  |
+[User-Specific Filter] > If user detected, filter to only their messages
+  |
+[Reranking] > Cross-encoder ranks all > top-30 most relevant
+  |
+[LLM Generation] > GPT-4o mini generates answer from context
+  |
+[Confidence Calculation] > Multi-factor confidence score
+  |
+[Response] > Answer + confidence + tips + sources (optional)
 ```
 
 ### Components
@@ -86,21 +86,21 @@ Question
 
 We considered multiple approaches:
 
-**1. Keyword Search** ❌
+**1. Keyword Search** (Not Chosen)
 - Fast but brittle
 - Fails on paraphrased questions
 - Low accuracy
 
-**2. Full LLM Context** ❌
+**2. Full LLM Context** (Not Chosen)
 - Would send all 3,349 messages to LLM
 - Expensive (~$1 per query)
 - Hits token limits
 
-**3. Simple Semantic Search Only** ⚠️
+**3. Simple Semantic Search Only** (Considered)
 - Better but still imperfect ranking
 - May miss relevant context
 
-**4. RAG with Two-Stage Retrieval** ✅
+**4. RAG with Two-Stage Retrieval** (Selected)
 - Semantic search gets diverse candidates (top 100)
 - Cross-encoder reranks by true relevance (top 30)
 - Best of both worlds: semantic understanding + precise ranking
@@ -237,7 +237,7 @@ curl -X POST "http://localhost:8000/ask" \
       "consistency": 0.16
     }
   },
-  "tips": "✓ Good confidence: 30 relevant sources found.",
+  "tips": "Good confidence: 30 relevant sources found.",
   "sources": [
     {
       "user_name": "Sophia Al-Farsi",
@@ -281,9 +281,9 @@ Confidence is calculated from 4 factors:
 | **Consistency** | 20% | Whether sources align with query type |
 
 **Interpretation:**
-- 🟢 **≥0.8**: High confidence, answer is reliable
-- 🟡 **0.6-0.8**: Moderate confidence, answer is reasonable
-- 🔴 **<0.6**: Low confidence, consider rephrasing question
+- **>=0.8**: High confidence, answer is reliable
+- **0.6-0.8**: Moderate confidence, answer is reasonable
+- **<0.6**: Low confidence, consider rephrasing question
 
 **Example:**
 ```
@@ -293,7 +293,7 @@ User-specific query ("Summarize Sophia's messages"):
 - Specificity: 0.19 (0.95 × 0.20 weight for user-specific)
 - Consistency: 0.16 (0.8 × 0.20 weight)
 ─────────
-Total: 0.69 confidence → 🟡 MODERATE
+Total: 0.69 confidence -> MODERATE
 ```
 
 ## Query Type Examples
@@ -304,28 +304,28 @@ python query.py "Summarize Sophia's messages"
 python query.py "What did Fatima say?"
 python query.py "Tell me about Lorenzo's preferences"
 ```
-→ System retrieves ALL messages from that user, reranks to top 30
+Result: System retrieves ALL messages from that user, reranks to top 30
 
 ### Multi-User Queries
 ```bash
 python query.py "Compare Fatima and Vikram's travel plans"
 python query.py "What do Sophia and Amira have in common?"
 ```
-→ System retrieves messages from both users, reranks together
+Result: System retrieves messages from both users, reranks together
 
 ### Factual Queries
 ```bash
 python query.py "How many cars does Vikram have?"
 python query.py "What restaurants are mentioned?"
 ```
-→ Standard semantic search + reranking
+Result: Standard semantic search + reranking
 
 ### General Queries
 ```bash
 python query.py "What are the popular travel destinations?"
 python query.py "What are people's preferences?"
 ```
-→ Standard semantic search + reranking (top 30)
+Result: Standard semantic search + reranking (top 30)
 
 ## Limitations & Known Issues
 
@@ -474,20 +474,20 @@ docker run -p 8000:8000 \
 ## Key Improvements Over Baselines
 
 ### vs. Simple Keyword Search
-- ✅ Handles paraphrased questions
-- ✅ Understands semantic meaning
-- ✅ 5-10x better accuracy
+- Handles paraphrased questions
+- Understands semantic meaning
+- 5-10x better accuracy
 
 ### vs. All Messages to LLM
-- ✅ 100x cheaper (~$0.0003 vs ~$0.03 per query)
-- ✅ Faster (2-3s vs 10-20s)
-- ✅ Fits token limits
+- 100x cheaper (~$0.0003 vs ~$0.03 per query)
+- Faster (2-3s vs 10-20s)
+- Fits token limits
 
 ### vs. Simple Semantic Search
-- ✅ Better ranking (cross-encoder)
-- ✅ Confidence scores
-- ✅ Query type awareness
-- ✅ User-specific optimization
+- Better ranking (cross-encoder)
+- Confidence scores
+- Query type awareness
+- User-specific optimization
 
 ## Contributing
 
