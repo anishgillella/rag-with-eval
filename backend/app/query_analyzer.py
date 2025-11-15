@@ -12,9 +12,16 @@ class QueryAnalyzer:
 
     # Keywords for different query types
     USER_SPECIFIC_KEYWORDS = {
-        "summarize", "summarise", "messages", "said", "say", "request", "requests",
-        "asked", "ask", "visited", "visit", "places", "travel", "mentioned", "mention",
+        "summarize", "summarise", "said", "say",
+        "asked", "ask", "visited", "visit", "places", "travel", "mentioned",
         "talked about", "discussed", "spoke", "shared", "commented"
+    }
+    
+    # Keywords for analytical queries
+    ANALYTICAL_KEYWORDS = {
+        "pattern", "patterns", "theme", "themes", "trend", "trends",
+        "common", "topic", "topics", "discuss", "overall", "general",
+        "analysis", "analyze", "summary", "summarize", "describe"
     }
 
     FACTUAL_KEYWORDS = {
@@ -75,7 +82,10 @@ class QueryAnalyzer:
         self, question_lower: str, mentioned_users: List[str], sources_from_user: bool
     ) -> str:
         """Determine the type of query."""
-        if len(mentioned_users) > 1:
+        # Check analytical first (higher priority)
+        if any(keyword in question_lower for keyword in self.ANALYTICAL_KEYWORDS):
+            return "analytical"
+        elif len(mentioned_users) > 1:
             return "multi_user"
         elif len(mentioned_users) == 1 and sources_from_user:
             return "user_specific"
