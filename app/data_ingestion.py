@@ -421,7 +421,7 @@ class DataIngestionPipeline:
                 if indexing_state.get("missed_ranges"):
                     logger.warning(f"Missed ranges: {', '.join(indexing_state['missed_ranges'][:5])}")
             elif expected > 0 and fetched == expected:
-                logger.info(f"✅ Successfully fetched and indexed all {expected} messages")
+                logger.info(f"Successfully fetched and indexed all {expected} messages")
             
             logger.info("=" * 80)
 

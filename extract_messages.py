@@ -242,10 +242,11 @@ def main():
     else:
         save_markdown(grouped, output_file)
     
-    print(f"\n✅ Extraction complete! Output: {output_file}")
+    print(f"\nExtraction complete! Output: {output_file}")
 
 
 if __name__ == "__main__":
     main()
+
 
 

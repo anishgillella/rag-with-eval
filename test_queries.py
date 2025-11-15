@@ -54,7 +54,7 @@ def main():
         response = run_query(query)
         
         if not response:
-            print(f"  ❌ FAILED: Could not get response")
+            print(f"  FAILED: Could not get response")
             print()
             continue
         

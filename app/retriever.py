@@ -17,6 +17,7 @@ from .vector_store import get_vector_store
 from .reranker import get_reranker
 from .llm import get_llm_service
 from .evaluations import get_evaluation_engine
+from .query_analyzer import get_query_analyzer
 from .config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,7 @@ class QARetriever:
         self.reranker = get_reranker()
         self.llm_service = get_llm_service()
         self.evaluation_engine = get_evaluation_engine()
+        self.query_analyzer = get_query_analyzer()
 
         self.top_k_initial = settings.top_k_initial_retrieval
         self.top_k_final = settings.top_k_after_reranking
@@ -273,6 +275,33 @@ class QARetriever:
             # Build response
             latency_ms = (time.time() - start_time) * 1000
 
+            # Analyze query for metadata and confidence
+            query_type, query_metadata, tips = self.query_analyzer.analyze_query(
+                request.question,
+                mentioned_users,
+                len(reranked_contexts),
+                sources_from_user=(len(mentioned_users) > 0),
+            )
+
+            # Calculate confidence score
+            reranker_scores = [ctx.reranker_score for ctx in reranked_contexts if ctx.reranker_score is not None]
+            avg_reranker_score = sum(reranker_scores) / len(reranker_scores) if reranker_scores else 0.5
+            logger.debug(f"Reranker scores: {len(reranker_scores)} scores, avg={avg_reranker_score:.3f}")
+
+            confidence, confidence_factors = self.query_analyzer.calculate_confidence_score(
+                num_sources=len(reranked_contexts),
+                avg_reranker_score=avg_reranker_score,
+                query_type=query_type,
+                sources_from_specific_user=(len(mentioned_users) > 0 and len(reranked_contexts) > 0),
+            )
+
+            logger.info(f"Confidence score: {confidence:.2f} (factors: {confidence_factors})")
+            logger.info(f"Query type: {query_type}")
+            logger.info(f"Tips: {tips}")
+
+            # Update query metadata with confidence factors
+            query_metadata.confidence_factors = confidence_factors
+
             sources = None
             if request.include_sources:
                 sources = [
@@ -300,15 +329,18 @@ class QARetriever:
 
             response = AnswerResponse(
                 answer=answer_text,
+                confidence=confidence,
                 sources=sources,
                 evaluations=evaluations,
                 latency_ms=latency_ms,
                 model_used=self.llm_service.model,
                 token_usage=token_usage_info,
+                query_metadata=query_metadata,
+                tips=tips,
             )
 
             logger.info("=" * 80)
-            logger.info(f"QUESTION ANSWERED in {latency_ms:.1f}ms")
+            logger.info(f"QUESTION ANSWERED in {latency_ms:.1f}ms (confidence: {confidence:.2f})")
             logger.info("=" * 80)
 
             return response

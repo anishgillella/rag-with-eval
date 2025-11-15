@@ -74,6 +74,37 @@ def format_response(response: dict, verbose: bool = False) -> str:
     output.append(response.get("answer", "No answer provided"))
     output.append("")
     
+    # Confidence and Query Type
+    output.append("=" * 80)
+    output.append("RELIABILITY METRICS")
+    output.append("=" * 80)
+    
+    confidence = response.get("confidence", 0)
+    confidence_percent = confidence * 100
+    
+    # Visual confidence indicator
+    if confidence >= 0.8:
+        confidence_indicator = "HIGH"
+    elif confidence >= 0.6:
+        confidence_indicator = "MODERATE"
+    else:
+        confidence_indicator = "LOW"
+    
+    output.append(f"Confidence: {confidence_indicator} ({confidence_percent:.0f}%)")
+    
+    # Query metadata
+    if "query_metadata" in response and response["query_metadata"]:
+        metadata = response["query_metadata"]
+        output.append(f"Query Type: {metadata.get('query_type', 'unknown')}")
+        if metadata.get("mentioned_users"):
+            output.append(f"Users: {', '.join(metadata['mentioned_users'])}")
+    
+    # Tips
+    if "tips" in response and response["tips"]:
+        output.append(f"\nTip: {response['tips']}")
+    
+    output.append("")
+    
     # Token usage
     if "token_usage" in response and response["token_usage"]:
         usage = response["token_usage"]
@@ -109,7 +140,7 @@ def format_response(response: dict, verbose: bool = False) -> str:
         output.append("=" * 80)
         if "evaluations" in evals:
             for eval_item in evals["evaluations"]:
-                status = "✓" if eval_item.get("passed", False) else "✗"
+                status = "PASS" if eval_item.get("passed", False) else "FAIL"
                 output.append(f"{status} {eval_item.get('name', 'unknown')}: "
                             f"{eval_item.get('score', 0):.2f}")
                 if verbose:
