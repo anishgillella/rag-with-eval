@@ -19,8 +19,26 @@ from app.data_ingestion import get_ingestion_pipeline, get_indexing_state, run_b
 settings = get_settings()
 logger = setup_logging(settings.log_level)
 
-# Initialize Logfire
-logfire.configure(token=settings.logfire_token)
+# Initialize Logfire (optional)
+logfire_enabled = False
+if settings.logfire_token:
+    try:
+        logfire.configure(token=settings.logfire_token)
+        logger.info("Logfire observability enabled")
+        logfire_enabled = True
+    except Exception as e:
+        logger.warning(f"Failed to initialize Logfire: {e}. Continuing without observability.")
+else:
+    logger.info("Logfire observability disabled (LOGFIRE_TOKEN not set)")
+
+# Wrapper for optional logfire instrumentation
+def optional_instrument(name):
+    """Decorator that only instruments if logfire is enabled."""
+    def decorator(func):
+        if logfire_enabled:
+            return logfire.instrument(name)(func)
+        return func
+    return decorator
 
 logger.info("=" * 80)
 logger.info("AURORA QA SYSTEM - Starting up")
@@ -107,7 +125,7 @@ app.add_middleware(
 
 
 @app.post("/ask", response_model=AnswerResponse)
-@logfire.instrument("ask_endpoint")
+@optional_instrument("ask_endpoint")
 async def ask(request: QuestionRequest) -> AnswerResponse:
     """
     Ask a question and get an answer based on member data.
@@ -155,7 +173,7 @@ async def ask(request: QuestionRequest) -> AnswerResponse:
 
 
 @app.get("/health", response_model=HealthResponse)
-@logfire.instrument("health_endpoint")
+@optional_instrument("health_endpoint")
 async def health() -> HealthResponse:
     """
     Health check endpoint.
@@ -193,7 +211,7 @@ async def health() -> HealthResponse:
 
 
 @app.post("/reindex")
-@logfire.instrument("reindex_endpoint")
+@optional_instrument("reindex_endpoint")
 async def reindex(force: bool = Query(False, description="Force re-indexing even if data exists")) -> dict:
     """
     Manually trigger re-indexing.
@@ -233,7 +251,7 @@ async def reindex(force: bool = Query(False, description="Force re-indexing even
 
 
 @app.get("/status", response_model=IndexingStatusResponse)
-@logfire.instrument("status_endpoint")
+@optional_instrument("status_endpoint")
 async def status() -> IndexingStatusResponse:
     """
     Get detailed indexing status.

@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     huggingface_api_key: str
     hf_embedding_model: str = "BAAI/bge-large-en-v1.5"
 
-    logfire_token: str
+    logfire_token: str = ""  # Optional - leave empty to disable Logfire
 
     # External API URLs
     external_api_url: str = "https://november7-730026606190.europe-west1.run.app"

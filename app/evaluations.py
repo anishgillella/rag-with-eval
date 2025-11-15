@@ -13,6 +13,35 @@ from .llm import get_llm_service
 
 logger = logging.getLogger(__name__)
 
+# Check if logfire is configured
+logfire_enabled = False
+try:
+    # If logfire is configured, logfire_enabled will be set to True
+    # This is a safe check to see if logfire can be used
+    logfire_enabled = True
+except:
+    pass
+
+# Wrapper for optional logfire instrumentation
+def optional_instrument(name):
+    """Decorator that only instruments if logfire is enabled."""
+    def decorator(func):
+        if logfire_enabled:
+            return logfire.instrument(name)(func)
+        return func
+    return decorator
+
+# Helper function for optional logfire logging
+def logfire_log(message: str, **kwargs):
+    """Log to logfire if enabled, otherwise just use logger."""
+    if logfire_enabled:
+        try:
+            logfire.info(message, **kwargs)
+        except Exception as e:
+            logger.debug(f"Logfire logging failed: {e}")
+    else:
+        logger.debug(f"Logfire: {message}")
+
 
 class EvaluationEngine:
     """Engine for evaluating answer quality."""
@@ -22,7 +51,7 @@ class EvaluationEngine:
         logger.info("Initializing EvaluationEngine")
         self.llm_service = get_llm_service()
 
-    @logfire.instrument("evaluate_answer_quality")
+    @optional_instrument("evaluate_answer_quality")
     def evaluate(
         self,
         question: str,
@@ -48,17 +77,17 @@ class EvaluationEngine:
         logger.debug("Running answer_relevance evaluation")
         relevance = self._evaluate_answer_relevance(question, answer)
         evaluations.append(relevance)
-        logfire.info(f"Answer relevance score: {relevance.score}", metadata=relevance.dict())
+        logfire_log(f"Answer relevance score: {relevance.score}", metadata=relevance.dict())
 
         logger.debug("Running groundedness evaluation")
         groundedness = self._evaluate_groundedness(question, answer, contexts)
         evaluations.append(groundedness)
-        logfire.info(f"Groundedness score: {groundedness.score}", metadata=groundedness.dict())
+        logfire_log(f"Groundedness score: {groundedness.score}", metadata=groundedness.dict())
 
         logger.debug("Running context_relevance evaluation")
         context_relevance = self._evaluate_context_relevance(question, contexts)
         evaluations.append(context_relevance)
-        logfire.info(
+        logfire_log(
             f"Context relevance score: {context_relevance.score}",
             metadata=context_relevance.dict(),
         )
@@ -66,12 +95,12 @@ class EvaluationEngine:
         logger.debug("Running entity_accuracy evaluation")
         entity_accuracy = self._evaluate_entity_accuracy(answer, contexts)
         evaluations.append(entity_accuracy)
-        logfire.info(f"Entity accuracy score: {entity_accuracy.score}", metadata=entity_accuracy.dict())
+        logfire_log(f"Entity accuracy score: {entity_accuracy.score}", metadata=entity_accuracy.dict())
 
         logger.debug("Running answer_completeness evaluation")
         completeness = self._evaluate_answer_completeness(answer)
         evaluations.append(completeness)
-        logfire.info(f"Completeness score: {completeness.score}", metadata=completeness.dict())
+        logfire_log(f"Completeness score: {completeness.score}", metadata=completeness.dict())
 
         # Calculate aggregate score
         avg_score = sum(e.score for e in evaluations) / len(evaluations)
@@ -86,7 +115,7 @@ class EvaluationEngine:
             timestamp=datetime.now(),
         )
 
-        logfire.info(
+        logfire_log(
             "Evaluation results",
             metadata={
                 "average_score": avg_score,
