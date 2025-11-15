@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import axios from 'axios';
-import { Send, Loader, AlertCircle, CheckCircle2, ChevronDown, Copy, Check } from 'lucide-react';
+import { Send, Loader, AlertCircle, CheckCircle2, ChevronDown, Copy, Check, Sparkles } from 'lucide-react';
 
 interface Source {
   user_name: string;
@@ -32,6 +32,45 @@ interface Response {
   };
 }
 
+const SAMPLE_QUESTIONS = [
+  {
+    category: 'User-Specific',
+    questions: [
+      "When is Layla planning her trip to London?",
+      "What are Amira's favorite restaurants?",
+      "Summarize Sophia's messages about travel",
+      "What does Vikram Desai own?"
+    ]
+  },
+  {
+    category: 'Factual',
+    questions: [
+      "How many cars does Vikram have?",
+      "Which restaurants are mentioned in the messages?",
+      "What travel destinations appear most frequently?",
+      "Who mentions visiting Paris?"
+    ]
+  },
+  {
+    category: 'Comparative',
+    questions: [
+      "Compare Fatima and Vikram's travel preferences",
+      "What do Sophia and Amira have in common?",
+      "Which user is most active in the conversations?",
+      "Compare different users' interests"
+    ]
+  },
+  {
+    category: 'Analytical',
+    questions: [
+      "What are the most common topics discussed?",
+      "How do users describe their preferences?",
+      "What patterns exist in user requests?",
+      "Summarize the dataset's main themes"
+    ]
+  }
+];
+
 export default function Home() {
   const [question, setQuestion] = useState('');
   const [response, setResponse] = useState<Response | null>(null);
@@ -43,10 +82,12 @@ export default function Home() {
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-  const handleAsk = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!question.trim()) return;
+  const handleAsk = async (e: React.FormEvent, q?: string) => {
+    e?.preventDefault?.();
+    const queryText = q || question;
+    if (!queryText.trim()) return;
 
+    setQuestion(queryText);
     setLoading(true);
     setError('');
     setResponse(null);
@@ -55,7 +96,7 @@ export default function Home() {
 
     try {
       const result = await axios.post(`${apiUrl}/ask`, {
-        question,
+        question: queryText,
         include_sources: true,
       });
       setResponse(result.data);
@@ -94,7 +135,7 @@ export default function Home() {
       {/* Main content */}
       <div className="max-w-3xl mx-auto px-4 py-12">
         {/* Query Form */}
-        <form onSubmit={handleAsk} className="mb-12">
+        <form onSubmit={(e) => handleAsk(e)} className="mb-12">
           <div className="flex gap-2">
             <input
               type="text"
@@ -262,10 +303,38 @@ export default function Home() {
           </div>
         )}
 
-        {/* Empty State */}
+        {/* Sample Questions */}
         {!response && !loading && (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-sm">Ask a question to get started</p>
+          <div className="space-y-8">
+            <div className="flex items-center gap-2 mb-6">
+              <Sparkles className="w-5 h-5 text-gray-600" />
+              <p className="text-sm font-medium text-gray-600">Sample Questions to Try</p>
+            </div>
+
+            {SAMPLE_QUESTIONS.map((category, catIdx) => (
+              <div key={catIdx}>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                  {category.category}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {category.questions.map((q, qIdx) => (
+                    <button
+                      key={qIdx}
+                      onClick={(e) => handleAsk(e, q)}
+                      className="text-left p-4 border border-gray-200 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-all text-sm text-gray-700 hover:text-gray-900"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-8">
+              <p className="text-xs text-gray-600">
+                <span className="font-semibold">Tip:</span> Click any sample question above to test, or type your own question in the input field.
+              </p>
+            </div>
           </div>
         )}
       </div>
