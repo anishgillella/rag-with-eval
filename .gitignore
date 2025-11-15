@@ -28,5 +28,7 @@ logs/
 *.log
 
 # Data files (generated)
-*.json
-messages_by_user.*
+messages_by_user.json
+anomalies_report.json
+
+# Keep railway.json and other config files
