@@ -3,6 +3,7 @@
 import logging
 import os
 from typing import List, Optional
+import numpy as np
 
 # Model is public - don't use token (clear any invalid cached tokens)
 # This prevents 401 errors from invalid tokens
@@ -74,8 +75,14 @@ class CrossEncoderReranker:
             # Get scores from cross-encoder
             scores = self.model.predict(pairs, show_progress_bar=True)
 
-            # Attach scores and sort
-            for ctx, score in zip(contexts, scores):
+            # Normalize scores to 0-1 range using sigmoid function
+            # Cross-encoder outputs raw scores (can be negative)
+            # Sigmoid normalizes them to (0, 1) range
+            scores_array = np.array(scores)
+            normalized_scores = 1.0 / (1.0 + np.exp(-scores_array))  # Sigmoid normalization
+            
+            # Attach normalized scores and sort
+            for ctx, score in zip(contexts, normalized_scores):
                 ctx.reranker_score = float(score)
 
             # Sort by reranker score (descending)

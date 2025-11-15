@@ -57,15 +57,39 @@ class TokenUsageInfo(BaseModel):
     cost_usd: float = 0.0
 
 
+class QueryMetadata(BaseModel):
+    """Metadata about the query analysis."""
+    
+    query_type: str = Field(
+        ...,
+        description="Type of query: 'user_specific', 'multi_user', 'factual', 'comparison', 'general'"
+    )
+    mentioned_users: List[str] = Field(
+        default_factory=list,
+        description="Users mentioned in the query"
+    )
+    confidence_factors: dict = Field(
+        default_factory=dict,
+        description="Factors contributing to confidence score"
+    )
+
+
 class AnswerResponse(BaseModel):
     """Response model for question answers."""
 
     answer: str
+    confidence: float = Field(
+        ge=0.0,
+        le=1.0,
+        description="Confidence score (0.0-1.0) based on source quality and quantity"
+    )
     sources: Optional[List[MessageSource]] = None
     evaluations: Optional[EvaluationResults] = None
     latency_ms: float
     model_used: str = "openai/gpt-4o-mini"
     token_usage: Optional[TokenUsageInfo] = None
+    query_metadata: Optional[QueryMetadata] = None
+    tips: Optional[str] = None
 
 
 class HealthResponse(BaseModel):
