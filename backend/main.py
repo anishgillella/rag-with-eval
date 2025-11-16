@@ -69,8 +69,8 @@ async def lifespan(app: FastAPI):
         app_state["retriever"] = retriever
         logger.info("Retriever initialized successfully")
 
-        # Print sample messages to show what data is available
-        print_sample_messages(count=10)
+        # Print sample messages to show what data is available (disabled for now to avoid startup issues)
+        # print_sample_messages(count=10)
 
         # Start background indexing if enabled
         if settings.indexing_enabled:
