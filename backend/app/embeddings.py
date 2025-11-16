@@ -1,38 +1,52 @@
-"""Embeddings service using Hugging Face Inference API."""
+"""Embeddings service using sentence-transformers library."""
 
 import logging
-import requests
+import os
 from typing import List
+
+# Models are public - clear any invalid tokens to avoid 401 errors
+if "HF_TOKEN" in os.environ:
+    del os.environ["HF_TOKEN"]
+if "HUGGING_FACE_HUB_TOKEN" in os.environ:
+    del os.environ["HUGGING_FACE_HUB_TOKEN"]
+
+from sentence_transformers import SentenceTransformer
 from .config import get_settings
 
 logger = logging.getLogger(__name__)
 
 
-class HFInferenceEmbeddingsClient:
-    """Client for Hugging Face Inference API embeddings."""
+class SentenceTransformerEmbeddingsClient:
+    """Client for sentence-transformers embeddings (local model)."""
 
     def __init__(self):
-        """Initialize the Hugging Face embeddings client."""
+        """Initialize the sentence-transformers embeddings client."""
         settings = get_settings()
         self.api_key = settings.huggingface_api_key
-        self.model_name = "sentence-transformers/all-MiniLM-L6-v2"
-        self.embedding_dim = 384
-        self.api_url = f"https://api-inference.huggingface.co/models/{self.model_name}"
+        self.model_name = "BAAI/bge-large-en-v1.5"
+        self.embedding_dim = 1024
 
-        logger.info(f"Initializing HF Inference Embeddings Client")
+        logger.info(f"Initializing Sentence Transformer Embeddings Client")
         logger.info(f"Model: {self.model_name}")
         logger.info(f"Embedding dimension: {self.embedding_dim}")
-        logger.info(f"API URL: {self.api_url}")
+        
+        try:
+            logger.info(f"Loading model: {self.model_name}")
+            self.model = SentenceTransformer(self.model_name)
+            logger.info(f"Successfully loaded model: {self.model_name}")
+        except Exception as e:
+            logger.error(f"Failed to load model {self.model_name}: {e}")
+            raise
 
     def embed_texts(self, texts: List[str]) -> List[List[float]]:
         """
-        Generate embeddings for a list of texts using HF Inference API.
+        Generate embeddings for a list of texts using sentence-transformers.
 
         Args:
             texts: List of text strings to embed
 
         Returns:
-            List of embedding vectors (each 384-dimensional)
+            List of embedding vectors (each 1024-dimensional)
 
         Raises:
             Exception: If embedding fails
@@ -41,61 +55,46 @@ class HFInferenceEmbeddingsClient:
             logger.warning("Empty text list provided to embed_texts")
             return []
 
-        logger.debug(f"Embedding {len(texts)} texts via HF API")
+        logger.debug(f"Embedding {len(texts)} texts with sentence-transformers")
 
         try:
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
-
-            # HF Inference API expects inputs as list of strings
-            payload = {"inputs": texts}
-
-            logger.debug(f"Calling HF API with {len(texts)} texts")
-            response = requests.post(
-                self.api_url,
-                headers=headers,
-                json=payload,
-                timeout=30
-            )
-
-            # Check for errors
-            if response.status_code != 200:
-                error_msg = response.text
-                logger.error(f"HF API error ({response.status_code}): {error_msg}")
-                raise Exception(f"HF API returned {response.status_code}: {error_msg}")
-
-            # Parse response
-            embeddings_list = response.json()
-
-            # HF returns list of lists directly
-            if not isinstance(embeddings_list, list):
-                logger.error(f"Unexpected response format: {type(embeddings_list)}")
-                raise Exception(f"Unexpected HF API response format")
-
-            # Verify we got embeddings for all texts
-            if len(embeddings_list) != len(texts):
-                logger.warning(f"Expected {len(texts)} embeddings, got {len(embeddings_list)}")
+            # Use sentence-transformers to encode (convert to numpy for proper conversion to list)
+            embeddings = self.model.encode(texts, convert_to_numpy=True, show_progress_bar=False)
+            
+            # Convert numpy arrays to list of lists
+            import numpy as np
+            if isinstance(embeddings, np.ndarray):
+                if embeddings.ndim == 1:
+                    # Single embedding
+                    embeddings_list = [embeddings.tolist()]
+                else:
+                    # Multiple embeddings (2D array)
+                    embeddings_list = [emb.tolist() for emb in embeddings]
+            elif isinstance(embeddings, list):
+                # Already a list - ensure all elements are lists
+                embeddings_list = []
+                for emb in embeddings:
+                    if isinstance(emb, np.ndarray):
+                        embeddings_list.append(emb.tolist())
+                    elif hasattr(emb, 'tolist'):  # PyTorch tensor or similar
+                        embeddings_list.append(emb.tolist())
+                    else:
+                        embeddings_list.append(list(emb))
+            else:
+                # Single embedding (tensor or other type)
+                if hasattr(embeddings, 'tolist'):
+                    embeddings_list = [embeddings.tolist()]
+                else:
+                    embeddings_list = [list(embeddings)]
 
             # Verify dimensions
             for i, emb in enumerate(embeddings_list):
-                if not isinstance(emb, list):
-                    logger.error(f"Embedding {i} is not a list: {type(emb)}")
-                    embeddings_list[i] = list(emb)
-                
                 if len(emb) != self.embedding_dim:
                     logger.warning(f"Embedding {i} has dimension {len(emb)}, expected {self.embedding_dim}")
 
-            logger.debug(f"Successfully embedded {len(texts)} texts via HF API")
+            logger.debug(f"Successfully embedded {len(texts)} texts")
             return embeddings_list
 
-        except requests.exceptions.Timeout:
-            logger.error("HF API request timed out")
-            raise Exception("HF API request timed out after 30 seconds")
-        except requests.exceptions.ConnectionError as e:
-            logger.error(f"Failed to connect to HF API: {e}")
-            raise Exception(f"Failed to connect to HF API: {e}")
         except Exception as e:
             logger.error(f"Failed to embed texts: {e}", exc_info=True)
             raise Exception(f"Failed to embed texts: {e}") from e
@@ -108,26 +107,24 @@ class HFInferenceEmbeddingsClient:
             text: Text to embed
 
         Returns:
-            384-dimensional embedding vector
+            1024-dimensional embedding vector
         """
         logger.debug(f"Embedding single text: {text[:50]}...")
         embeddings = self.embed_texts([text])
         return embeddings[0] if embeddings else []
 
-    def embed_batch(self, texts: List[str], batch_size: int = 50) -> List[List[float]]:
+    def embed_batch(self, texts: List[str], batch_size: int = 100) -> List[List[float]]:
         """
         Generate embeddings for a large list of texts in batches.
 
-        HF Inference API has limits on payload size, so we batch requests.
-
         Args:
             texts: List of text strings to embed
-            batch_size: Number of texts per API call (50 is safe default)
+            batch_size: Number of texts per batch (for logging, model handles batching)
 
         Returns:
             List of embedding vectors
         """
-        logger.info(f"Embedding {len(texts)} texts in batches of {batch_size}")
+        logger.info(f"Embedding {len(texts)} texts (model will handle batching)")
         
         all_embeddings = []
         
@@ -153,10 +150,10 @@ class HFInferenceEmbeddingsClient:
 _embeddings_client = None
 
 
-def get_embeddings_client() -> HFInferenceEmbeddingsClient:
+def get_embeddings_client() -> SentenceTransformerEmbeddingsClient:
     """Get or create the embeddings client."""
     global _embeddings_client
     if _embeddings_client is None:
-        logger.info("Creating new HFInferenceEmbeddingsClient instance")
-        _embeddings_client = HFInferenceEmbeddingsClient()
+        logger.info("Creating new SentenceTransformerEmbeddingsClient instance")
+        _embeddings_client = SentenceTransformerEmbeddingsClient()
     return _embeddings_client
