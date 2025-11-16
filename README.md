@@ -2,7 +2,11 @@
 
 A production-ready question-answering system using Retrieval-Augmented Generation (RAG) with a modern full-stack architecture. Built with FastAPI backend and Next.js frontend.
 
-**Live Demo:** [https://aurora-qa.vercel.app](https://aurora-qa.vercel.app)
+## 🚀 Live Deployment
+
+**Frontend:** [https://rag-with-eval-cl5krombd-anishgillella-gmailcoms-projects.vercel.app/](https://rag-with-eval-cl5krombd-anishgillella-gmailcoms-projects.vercel.app/)
+
+**Backend API:** [https://rag-with-eval-production.up.railway.app](https://rag-with-eval-production.up.railway.app)
 
 ## Quick Start
 
@@ -32,6 +36,73 @@ npm run dev  # Visit http://localhost:3000
 ### Option 2: Deploy to Cloud
 
 See [DEPLOYMENT.md](./DEPLOYMENT.md) for step-by-step Railway + Vercel deployment.
+
+## API Examples
+
+### Web UI (Frontend)
+Visit the live frontend to ask questions through the web interface:
+```
+https://rag-with-eval-cl5krombd-anishgillella-gmailcoms-projects.vercel.app/
+```
+
+### REST API (Backend)
+
+**Example Query:**
+```bash
+curl -X POST "https://rag-with-eval-production.up.railway.app/ask" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What did Sophia say about fruit baskets?"}'
+```
+
+**Response:**
+```json
+{
+  "answer": "Sophia Al-Farsi requested that there always be a fresh fruit basket in her hotel room upon check-in.",
+  "confidence": 0.68,
+  "sources": [
+    {
+      "user_name": "Sophia Al-Farsi",
+      "message": "Ensure there's always a fresh fruit basket in my hotel room upon check-in.",
+      "similarity_score": 0.92
+    }
+  ],
+  "latency_ms": 2100,
+  "model_used": "openai/gpt-4o-mini"
+}
+```
+
+**Try Other Questions:**
+```bash
+# User-specific query
+curl -X POST "https://rag-with-eval-production.up.railway.app/ask" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "When is Layla planning her trip to London?"}'
+
+# Factual query
+curl -X POST "https://rag-with-eval-production.up.railway.app/ask" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "How many cars does Vikram have?"}'
+
+# Comparative query
+curl -X POST "https://rag-with-eval-production.up.railway.app/ask" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Compare Sophia and Vikram'\''s travel preferences"}'
+```
+
+**Other Endpoints:**
+```bash
+# Health check
+curl https://rag-with-eval-production.up.railway.app/health
+
+# Indexing status
+curl https://rag-with-eval-production.up.railway.app/status
+
+# Re-index data (if needed)
+curl -X POST "https://rag-with-eval-production.up.railway.app/reindex?force=true"
+
+# Interactive API docs
+https://rag-with-eval-production.up.railway.app/docs
+```
 
 ## Project Structure
 
