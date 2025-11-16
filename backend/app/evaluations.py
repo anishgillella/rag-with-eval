@@ -3,7 +3,6 @@
 import logging
 from datetime import datetime
 from typing import List
-import logfire
 from .models import (
     EvaluationScore,
     EvaluationResults,
@@ -13,20 +12,21 @@ from .llm import get_llm_service
 
 logger = logging.getLogger(__name__)
 
-# Check if logfire is configured
+# Check if logfire is available
 logfire_enabled = False
+logfire = None
 try:
-    # If logfire is configured, logfire_enabled will be set to True
-    # This is a safe check to see if logfire can be used
+    import logfire as logfire_module
+    logfire = logfire_module
     logfire_enabled = True
-except:
+except ImportError:
     pass
 
 # Wrapper for optional logfire instrumentation
 def optional_instrument(name):
     """Decorator that only instruments if logfire is enabled."""
     def decorator(func):
-        if logfire_enabled:
+        if logfire_enabled and logfire:
             return logfire.instrument(name)(func)
         return func
     return decorator

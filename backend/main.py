@@ -7,7 +7,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-import logfire
 
 from app.config import get_settings
 from app.logger_config import setup_logging
@@ -21,15 +20,22 @@ logger = setup_logging(settings.log_level)
 
 # Initialize Logfire (optional)
 logfire_enabled = False
-if settings.logfire_token:
-    try:
-        logfire.configure(token=settings.logfire_token)
-        logger.info("Logfire observability enabled")
-        logfire_enabled = True
-    except Exception as e:
-        logger.warning(f"Failed to initialize Logfire: {e}. Continuing without observability.")
-else:
-    logger.info("Logfire observability disabled (LOGFIRE_TOKEN not set)")
+logfire = None
+try:
+    import logfire as logfire_module
+    logfire = logfire_module
+    
+    if settings.logfire_token:
+        try:
+            logfire.configure(token=settings.logfire_token)
+            logger.info("Logfire observability enabled")
+            logfire_enabled = True
+        except Exception as e:
+            logger.warning(f"Failed to initialize Logfire: {e}. Continuing without observability.")
+    else:
+        logger.info("Logfire observability disabled (LOGFIRE_TOKEN not set)")
+except ImportError:
+    logger.info("Logfire not installed - continuing without observability")
 
 # Wrapper for optional logfire instrumentation
 def optional_instrument(name):
