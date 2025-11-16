@@ -31,8 +31,9 @@ RUN useradd -m -u 1000 appuser
 # Copy requirements
 COPY backend/requirements.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies with CPU-only PyTorch to reduce image size
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch==2.9.1+cpu && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Create necessary directories
 RUN mkdir -p /app/logs && chown -R appuser:appuser /app
