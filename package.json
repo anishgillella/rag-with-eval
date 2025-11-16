@@ -1,0 +1,20 @@
+{
+  "name": "aurora",
+  "version": "1.0.0",
+  "description": "Aurora QA System - RAG with evaluations",
+  "private": true,
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "dev": "cd frontend && npm run dev",
+    "start": "cd frontend && npm start",
+    "lint": "cd frontend && npm run lint"
+  },
+  "keywords": [
+    "rag",
+    "qa",
+    "llm"
+  ],
+  "author": "",
+  "license": "MIT"
+}
+
