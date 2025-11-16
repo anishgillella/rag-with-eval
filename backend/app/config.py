@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     message_batch_size: int = 256
 
     # Background Job Settings
-    indexing_enabled: bool = True
+    indexing_enabled: bool = False  # Disabled by default - enable via POST /reindex to avoid OOM on startup
     indexing_batch_size: int = 256
     delta_refresh_hours: int = 12
     full_reindex_days: int = 7
