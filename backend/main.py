@@ -69,8 +69,8 @@ async def lifespan(app: FastAPI):
         app_state["retriever"] = retriever
         logger.info("Retriever initialized successfully")
 
-        # Print sample messages to show what data is available
-        print_sample_messages(count=10)
+        # Print sample messages to show what data is available (disabled for now to avoid startup issues)
+        # print_sample_messages(count=10)
 
         # Start background indexing if enabled
         if settings.indexing_enabled:
@@ -335,5 +335,5 @@ if __name__ == "__main__":
     import uvicorn
 
     logger.info("Starting uvicorn server")
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level=settings.log_level.lower())
+    uvicorn.run(app, host="0.0.0.0", port=8080, log_level=settings.log_level.lower())
 

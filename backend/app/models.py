@@ -77,6 +77,8 @@ class QueryMetadata(BaseModel):
 class AnswerResponse(BaseModel):
     """Response model for question answers."""
 
+    model_config = {"protected_namespaces": ()}
+
     answer: str
     confidence: float = Field(
         ge=0.0,
