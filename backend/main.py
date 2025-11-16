@@ -69,6 +69,25 @@ async def lifespan(app: FastAPI):
         app_state["retriever"] = retriever
         logger.info("Retriever initialized successfully")
 
+        # Check Pinecone for existing indexed data and populate indexing state
+        try:
+            from app.vector_store import get_vector_store
+            from app.data_ingestion import indexing_state
+            vector_store = get_vector_store()
+            stats = vector_store.get_index_stats()
+            
+            # Extract total vector count from stats
+            total_vectors = stats.get('total_vector_count', 0)
+            if total_vectors > 0:
+                logger.info(f"Found {total_vectors} existing vectors in Pinecone - indexing state restored")
+                indexing_state["indexed_messages"] = total_vectors
+                indexing_state["total_messages"] = total_vectors
+                indexing_state["in_progress"] = False
+            else:
+                logger.info("No existing vectors found in Pinecone - indexing required")
+        except Exception as e:
+            logger.warning(f"Could not check Pinecone stats on startup: {e}")
+
         # Print sample messages to show what data is available (disabled for now to avoid startup issues)
         # print_sample_messages(count=10)
 
